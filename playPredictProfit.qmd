@@ -17,8 +17,10 @@ In our project, we hope to teach you how to use various functions of HTMLWidgets
 ### Publishing
 
 ```{r}
-install.packages("rsconnect")
+install.packages("rsconnect", dependencies = TRUE, quiet = TRUE)
 install.packages("shiny")
+
+#rsconnect::deployApp()
 ```
 
 1.  Render .qmd file to create a .html document
