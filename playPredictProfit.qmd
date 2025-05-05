@@ -434,7 +434,7 @@ selected_teams <- c("Green Bay Packers", "Chicago Bears", "Minnesota Vikings", "
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("NFC North Statistics (Last Decade)"),
+  titlePanel("NFL Team Metrics Explorer (Last Decade)"),
   sidebarLayout(
     sidebarPanel(
       selectInput("metric", "Select Metric:",
@@ -457,43 +457,45 @@ server <- function(input, output) {
   output$nfl_dygraph <- renderDygraph({
     df <- team_stats |> 
       filter(team %in% selected_teams, year >= 2013) |> 
-      mutate(win_efficiency = win_loss_perc * mov) |>  # create win_efficiency in all cases
       select(year, team, all_of(input$metric)) |> 
       pivot_wider(names_from = team, values_from = all_of(input$metric))
     
-    ts_data <- xts(df[-1], order.by = as.yearmon(df$year))
+    ts_data <- xts(df[-1], order.by = as.Date(paste0(df$year, "-01-01")))
     
-    dygraph(ts_data, main = paste("NFC North Statistics", names(which(c(
+    team_colors <- c(
+      "Green Bay Packers" = "#203731",
+      "Chicago Bears" = "#FFA400",
+      "Minnesota Vikings" = "#4F2683",
+      "Detroit Lions" = "#0076B6"
+    )
+    
+    main_title <- paste("NFC North Statistics", names(which(c(
       win_loss_perc = "Win %",
       points_diff = "Point Differential",
-      tot_yds = "Total Yards",
-      win_efficiency = "Win Efficiency",
       turnover_pct = "Turnover %",
       score_pct = "Score %",
       exp_pts_tot = "Expected Points Total",
       penalties_yds = "Penalty Yards"
-    ) == input$metric)), "(Last Decade)")) |> 
+    ) == input$metric)), "(Last Decade)")
+    
+    dg <- dygraph(ts_data, main = main_title) |> 
       dyRangeSelector() |> 
       dyOptions(
         drawPoints = TRUE,
         pointSize = 3,
-        colors = unname(c(
-          "Green Bay Packers" = "#203731",
-          "Chicago Bears" = "#FFA400",
-          "Minnesota Vikings" = "#4F2683",
-          "Detroit Lions" = "#0076B6"
-        )[colnames(ts_data)])
+        colors = unname(team_colors[colnames(ts_data)])
       ) |> 
       dyLegend(show = "always", width = 300) |> 
       dyHighlight(highlightCircleSize = 6, 
                   highlightSeriesBackgroundAlpha = 0.3,
                   hideOnMouseOut = FALSE) |> 
-      dyAxis("x", axisLabelFormatter = JS("function(d){ return d.getFullYear(); }")) |> 
-      dyAxis("y", valueFormatter = if (input$metric == "win_loss_perc") {
-        JS("function(x) {return (x * 100).toFixed(1) + '%';}")
-      } else {
-        NULL
-      })
+      dyAxis("x", axisLabelFormatter = JS("function(d){ return d.getFullYear(); }"))
+    if (input$metric == "win_loss_perc") {
+      dg <- dg |> dyAxis("y", valueFormatter = JS("function(x) {return (x * 100).toFixed(1) + '%';}"))
+    } else if (input$metric %in% c("turnover_pct", "score_pct")) {
+      dg <- dg |> dyAxis("y", valueFormatter = JS("function(x) {return x.toFixed(1) + '%';}"))
+    }
+    dg
   })
 }
 # Run the app
