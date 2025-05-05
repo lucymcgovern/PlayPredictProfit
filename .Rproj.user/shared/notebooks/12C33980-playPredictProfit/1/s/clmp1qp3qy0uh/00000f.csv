@@ -1,0 +1,43 @@
+"0",""
+"0","#leaflet geospatial with spreadspoke/nfl data "
+"0","library(leaflet)"
+"0","library(dplyr)"
+"0","library(readr)"
+"0",""
+"0","games <- read_csv(""spreadspoke_scores.csv"")"
+"1","[1mRows: [22m[34m14086[39m [1mColumns: [22m[34m17[39m
+"
+"1","[36m──[39m [1mColumn specification[22m [36m────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m (7): schedule_date, schedule_week, t...
+[32mdbl[39m (8): schedule_season, score_home, sc...
+[33mlgl[39m (2): schedule_playoff, stadium_neutral
+"
+"1","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"
+"0","# join coordinates with game file"
+"0","games_geo <- games %>%"
+"0","  filter(!is.na(weather_temperature)) %>%"
+"0","  left_join(stadium_coords, by = ""stadium"") %>%"
+"0","  filter(!is.na(latitude) & !is.na(longitude))"
+"0",""
+"0","# creating map"
+"0","leaflet(games_geo) %>%"
+"0","  addProviderTiles(providers$CartoDB.Positron) %>%  # Clean base map"
+"0","  addCircleMarkers("
+"0","    lng = ~longitude,"
+"0","    lat = ~latitude,"
+"0","    radius = 6,"
+"0","    color = ""blue"","
+"0","    fillOpacity = 0.7,"
+"0","    popup = ~paste0("
+"0","      ""<strong>"", team_home, "" vs "", team_away, ""</strong><br>"","
+"0","      stadium, ""<br>"","
+"0","      ""Week "", schedule_week, "" ("", schedule_season, "")<br>"","
+"0","      ""Temp: "", weather_temperature, ""°F<br>"","
+"0","      ""Humidity: "", weather_humidity, ""%<br>"","
+"0","      ""Wind: "", weather_wind_mph, "" mph"""
+"0","    )"
+"0","  )"

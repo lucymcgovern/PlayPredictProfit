@@ -1,0 +1,135 @@
+"0","library(shiny)"
+"0","library(htmlwidgets)"
+"0","library(dygraphs)"
+"0","library(readr)"
+"0","library(dplyr)"
+"0","library(tidyr)"
+"0","library(xts)"
+"2","Loading required package: zoo
+"
+"2","
+Attaching package: ‘zoo’
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    as.Date, as.Date.numeric
+
+"
+"2","
+######################### Warning from 'xts' package ##########################
+#                                                                             #
+# The dplyr lag() function breaks how base R's lag() function is supposed to  #
+# work, which breaks lag(my_xts). Calls to lag(my_xts) that you type or       #
+# source() into this session won't work correctly.                            #
+#                                                                             #
+# Use stats::lag() to make sure you're not using dplyr::lag(), or you can add #
+# conflictRules('dplyr', exclude = 'lag') to your .Rprofile to stop           #
+# dplyr from breaking base R's lag() function.                                #
+#                                                                             #
+# Code in packages is not affected. It's protected by R's namespace mechanism #
+# Set `options(xts.warn_dplyr_breaks_lag = FALSE)` to suppress this warning.  #
+#                                                                             #
+###############################################################################
+"
+"2","
+Attaching package: ‘xts’
+
+"
+"2","The following object is masked from ‘package:leaflet’:
+
+    addLegend
+
+"
+"2","The following objects are masked from ‘package:dplyr’:
+
+    first, last
+
+"
+"0","library(zoo)"
+"0",""
+"0","# Load the data"
+"0","team_stats <- read_csv(""team_stats_2003_2023.csv"")"
+"1","[1mRows: [22m[34m672[39m [1mColumns: [22m[34m35[39m
+"
+"1","[36m──[39m [1mColumn specification[22m [36m────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m  (1): team
+[32mdbl[39m (34): year, wins, losses, win_loss_p...
+"
+"1","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+"
+"0","# Define the teams of interest"
+"0","selected_teams <- c(""Green Bay Packers"", ""Chicago Bears"", ""Minnesota Vikings"", ""Detroit Lions"")"
+"0",""
+"0","# Define UI"
+"0","ui <- fluidPage("
+"0","  titlePanel(""NFC North Statistics (Last Decade)""),"
+"0","  sidebarLayout("
+"0","    sidebarPanel("
+"0","      selectInput(""metric"", ""Select Metric:"","
+"0","                  choices = c(""Win %"" = ""win_loss_perc"","
+"0","                              ""Point Differential"" = ""points_diff"","
+"0","                              ""Turnover %"" = ""turnover_pct"","
+"0","                              ""Score %"" = ""score_pct"","
+"0","                              ""Expected Points Total"" = ""exp_pts_tot"","
+"0","                              ""Penalty Yards"" = ""penalties_yds""),"
+"0","                  selected = ""win_loss_perc"")"
+"0","    ),"
+"0","    mainPanel("
+"0","      dygraphOutput(""nfl_dygraph"")"
+"0","    )"
+"0","  )"
+"0",")"
+"0",""
+"0","# Define server"
+"0","server <- function(input, output) {"
+"0","  output$nfl_dygraph <- renderDygraph({"
+"0","    df <- team_stats |> "
+"0","      filter(team %in% selected_teams, year >= 2013) |> "
+"0","      mutate(win_efficiency = win_loss_perc * mov) |>  # create win_efficiency in all cases"
+"0","      select(year, team, all_of(input$metric)) |> "
+"0","      pivot_wider(names_from = team, values_from = all_of(input$metric))"
+"0","    "
+"0","    ts_data <- xts(df[-1], order.by = as.yearmon(df$year))"
+"0","    "
+"0","    dygraph(ts_data, main = paste(""NFC North Statistics"", names(which(c("
+"0","      win_loss_perc = ""Win %"","
+"0","      points_diff = ""Point Differential"","
+"0","      tot_yds = ""Total Yards"","
+"0","      win_efficiency = ""Win Efficiency"","
+"0","      turnover_pct = ""Turnover %"","
+"0","      score_pct = ""Score %"","
+"0","      exp_pts_tot = ""Expected Points Total"","
+"0","      penalties_yds = ""Penalty Yards"""
+"0","    ) == input$metric)), ""(Last Decade)"")) |> "
+"0","      dyRangeSelector() |> "
+"0","      dyOptions("
+"0","        drawPoints = TRUE,"
+"0","        pointSize = 3,"
+"0","        colors = unname(c("
+"0","          ""Green Bay Packers"" = ""#203731"","
+"0","          ""Chicago Bears"" = ""#FFA400"","
+"0","          ""Minnesota Vikings"" = ""#4F2683"","
+"0","          ""Detroit Lions"" = ""#0076B6"""
+"0","        )[colnames(ts_data)])"
+"0","      ) |> "
+"0","      dyLegend(show = ""always"", width = 300) |> "
+"0","      dyHighlight(highlightCircleSize = 6, "
+"0","                  highlightSeriesBackgroundAlpha = 0.3,"
+"0","                  hideOnMouseOut = FALSE) |> "
+"0","      dyAxis(""x"", axisLabelFormatter = JS(""function(d){ return d.getFullYear(); }"")) |> "
+"0","      dyAxis(""y"", valueFormatter = if (input$metric == ""win_loss_perc"") {"
+"0","        JS(""function(x) {return (x * 100).toFixed(1) + '%';}"")"
+"0","      } else {"
+"0","        NULL"
+"0","      })"
+"0","  })"
+"0","}"
+"0","# Run the app"
+"0","shinyApp(ui = ui, server = server)"
+"2","
+Listening on http://127.0.0.1:4443
+"

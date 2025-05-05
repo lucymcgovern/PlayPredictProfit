@@ -1,0 +1,31 @@
+{
+    "id": "14A86B20",
+    "path": "/cloud/project/playPredictProfit/playPredictProfit.qmd",
+    "project_path": "playPredictProfit/playPredictProfit.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1746405281863.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "docOutlineVisible": "1",
+        "rmdVisualCollapsedChunks": "",
+        "rmdVisualModeLocation": "2:363",
+        "cursorPosition": "24,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1746405311,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1746406397632,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,29 @@
+{
+    "id": "6F34961E",
+    "path": "/cloud/project/README.qmd",
+    "project_path": "README.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1692015928796.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "rmdVisualModeLocation": "2:0",
+        "rmdVisualCollapsedChunks": "",
+        "docOutlineVisible": "1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1692017629,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1692017629373,
+    "read_only": false,
+    "read_only_alternatives": []
+}

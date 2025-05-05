@@ -1,0 +1,498 @@
+---
+title: "Play, Predict, Profit?"
+author: "Riley Abrahamson, Napoleon Her, Emma Kimball, Lucy McGovern, and Brianna Velez"
+format: html
+editor: visual
+runtime: shiny
+---
+
+## Introduction
+
+NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.html)
+
+*How can we use interactive data to our advantage when predicting NFL game outcomes?*
+
+In our project, we hope to teach you how to use various functions of HTMLWidgets through the lense of NFL betting and predictions. These tools will help you to visualize the impact of various NFL metrics on game outcome through interactive and 3D plots. We hope that you are able to use this dashboard to make your own predictions and, eventually, create your own HTMLWidgets graphics.
+
+### Publishing
+
+```{r}
+install.packages("rsconnect")
+install.packages("shiny")
+install.packages("quarto") 
+```
+
+```{r}
+rsconnect::deployApp(appDir = "/cloud/project/playPredictProfit")
+```
+
+### Data Sets
+
+[NFL Team Data 2003-2023](https://www.kaggle.com/datasets/nickcantalupa/nfl-team-data-2003-2023) (Kaggle)
+
+-   **team_stats_2003_2023.csv** (year, team, wins, losses, win/loss pct, points, opponent points, point differential, avg. Margin of victory, games played, offensive yards, offensive plays, yards per play, turnovers lost, fumbles lost, first downs, passes completed, pass attempts, passing yards, passing TDs, interceptions thrown, net yards per pass, passing first downs, rushing attempts, rushing yards, rushing TDs, rushing yards per attempt, rushing first downs, penalties, penalty yards, first downs by penalty, pct of drives ending in score, pct of drives ending in turnover, expected points, ties)
+
+[NFL Scores and Betting Data](https://www.kaggle.com/datasets/tobycrabtree/nfl-scores-and-betting-data/data?select=nfl_teams.csv) (Kaggle)
+
+-   **nfl_teams.csv** (name, nickname, ID, alt. ID, conference, division, old conference, old division)
+
+-   **spreadspoke_scores.csv** (date, season, week, playoff, home team, home score, away team, away score, favored team, favored spread, over under line, stadium, neutral stadium, temperature, wind (MPH), humidity, weather details)
+
+Stadiums
+
+-   **stadiums.csv** (stadium, latitude, longitude)
+
+```{r}
+#| echo: true
+
+# Basic packages for data tidying/visualizing:
+library(tidyverse)
+library(plotly)
+
+# Specifically needed for HTML Widgets
+library(htmltools)
+library(htmlwidgets)
+
+team_stats <- read_csv("team_stats_2003_2023.csv")
+teams <- read_csv("nfl_teams.csv")
+scores <- read_csv("spreadspoke_scores.csv")
+stadium_coords <- read_csv("stadiums.csv")
+
+head(team_stats)
+head(teams)
+head(scores)
+head(stadium_coords)
+```
+
+### Basic Data Visualizations
+
+Get to know our data sets and how they can be used to predict NFL game outcomes with basic plotly and ggplot implementations.
+
+**Example 1: Is there such thing as "Home Field Advantage?"**
+
+```{r}
+#| echo: false
+
+scores <- scores %>%
+  filter(schedule_season > 2002 & schedule_season < 2024) %>%
+  mutate(home_win = if_else(score_home > score_away, "W", "L"))
+
+home_win_plot <- scores %>%
+  filter(home_win == "W") %>%
+  count(team_home, sort = TRUE) %>%
+  ggplot(aes(
+    x = fct_reorder(team_home, n), 
+    y = n,
+    text = paste0(team_home))) +
+  geom_col(fill = "red") +
+  coord_flip() +
+  labs(
+    title = "Home Wins by Team Since 2003",
+    x = "Home Team",
+    y = "Number of Home Wins"
+  )
+
+ggplotly(home_win_plot, tooltip = "text")
+
+```
+
+```{r}
+#| echo: false
+
+team_wins <- team_stats %>%
+  group_by(team) %>%
+  summarize(total_wins = sum(wins, na.rm = TRUE)) %>%
+  arrange(desc(total_wins))
+
+total_wins_plot <- ggplot(team_wins, aes(
+  x = fct_reorder(team, total_wins),
+  y = total_wins,
+  text = paste0(team, " ", total_wins)
+)) +
+  geom_col(fill = "blue") +
+  coord_flip() +
+  labs(
+    title = "Total Wins per Team Since 2003",
+    x = "Team",
+    y = "Total Wins"
+  )
+
+ggplotly(total_wins_plot, tooltip = "text")
+
+```
+
+*Note: this graph captures all teams since 2003, some of which don't exist anymore or switched ownership.*
+
+These graphs use frequency tables to look at wins between 2003 and 2023. The red plot uses the "scores" data set to look at how many times each team won at home. The blue plot uses "team_stats" to calculate the total number of wins each team has had, regardless of location. Can you spot any differences?
+
+**Example 2: Can you relate prediction outcome to the over/under line distribution or spread favorite?**
+
+```{r}
+#| echo: false
+
+scores_joined <- scores %>%
+  left_join(teams, by = c("team_home" = "team_name")) 
+
+# Add a new column "team_win_id" based on if the favored team won
+scores_joined <- scores_joined %>%
+  mutate(
+    favorite_team_won = case_when(
+      team_favorite_id == team_id & home_win == "W" ~ TRUE,
+      team_favorite_id != team_id & home_win == "L" ~ TRUE,
+      TRUE ~ FALSE
+    )
+  )
+
+betting_plot <- scores_joined %>%
+  filter(!is.na(over_under_line) & !is.na(spread_favorite)) %>%
+  ggplot(aes(
+    x = spread_favorite, 
+    y = over_under_line, 
+    color = favorite_team_won,
+    text = paste("Favorite Team (", team_favorite_id, ") Won:", favorite_team_won))) +
+  geom_point(alpha = 0.3) +
+  labs(
+    title = "Over/Under Betting Lines, Spread, and Outcome", 
+    x = "Spread Favorite", 
+    y = "Over/Under Line",
+    color = "Did Favored Team Win?") +
+  scale_color_manual(values = c("TRUE" = "blue", "FALSE" = "red"))
+
+ggplotly(betting_plot, tooltip = "text")
+
+
+```
+
+This graph gives us a closer look at the betting-specific data we have. It compares the over/under line (y-axis) to the spread favorite (x-axis) and if the prediction was correct (color). The over-under line is the combined number of points expected to be scored by both teams over the course of a game. That number is typically higher for better teams with stronger offenses. The spread favorite is based off of the point spread, which is the expected difference between the two teams. It is the favorite, which means it represents the amount of points the favored team is expected to get over the losing team.
+
+When making a bet, you predict if you think the over/under line is going to be lower or higher than the actual combined score. You can look at the spread to see how close the game will be, which helps you predict upsets. What do you notice when looking at this graph? Is there any kind of relationship between the outcome prediction and spread or the over/under line?
+
+## RGL Widget
+
+RGL Widget helps to create 3D, interactive graphs and plots which can be embedded into HTML documents. You can add a toggle to quickly change variables on plots.
+
+### Important Functions
+
+-   plot3d(): creates the plot
+-   rglwidget(): converts the plot to a widget, arguments like "width" and "height" can be used for customization
+-   toggleWidget(): interactive elements like check boxes
+-   playWidget(): animation controls for time-based plots
+
+### Example
+
+```{r}
+#| echo: true
+
+options(rgl.useNULL = TRUE)
+library(rgl)
+
+teams <- read.csv(file = "nfl_teams.csv")
+stats <- read.csv(file = "team_stats_2003_2023.csv")
+
+stats <- stats %>%
+  left_join(teams[, c("team_name", "team_division")], by = c("team" = "team_name"))
+
+divisions <- unique(teams$team_division)
+division_colors <- setNames(rainbow(length(divisions)), divisions)
+stats$color <- division_colors[stats$team_division]
+
+```
+
+**Plot 1**
+
+```{r}
+plot <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = "blue"))
+rglwidget(elementId = "teamstats") 
+```
+
+**Plot 2**
+
+```{r}
+plot2 <- with(stats, plot3d(points, points_opp, points_diff, type = "s", col = "red"))
+rglwidget(elementId = "teamstats2") 
+```
+
+**Plot 2**
+
+```{r}
+plot3 <- with(stats, plot3d(year, mov, wins, type = "s", col = "green"))
+rglwidget(elementId = "teamstats3")
+```
+
+**Plot 4**
+
+```{r}
+plot4 <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = color))
+rglwidget(elementId = "teamstats4")
+```
+
+## Leaflet
+
+Leaflet creates interactive mapping graphics that allow for zooming and panning over. It requires coordinates, which needed to be sourced outside of our kaggle data sets, to help locate the object being mapped.
+
+### Important Functions
+
+-   add(): is used to add things like markers/legends. Example; addLegend(), addCircleMarkers()
+-   popup=: the popup function allows us to add a popup explaining something about the marker added to a map
+-   clusterOptions: allow us to cluster info on the map, for example I used markerClusterOptions() to cluster the points on the map to make them one big point until zoomed in on and expanding out
+
+### Example
+
+**code chunk 1:** first map attempt
+
+```{r}
+
+#leaflet geospatial with spreadspoke/nfl data 
+library(leaflet)
+library(dplyr)
+library(readr)
+
+games <- read_csv("spreadspoke_scores.csv")
+
+# join coordinates with game file
+games_geo <- games %>%
+  filter(!is.na(weather_temperature)) %>%
+  left_join(stadium_coords, by = "stadium") %>%
+  filter(!is.na(latitude) & !is.na(longitude))
+
+# creating map
+leaflet(games_geo) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%  # Clean base map
+  addCircleMarkers(
+    lng = ~longitude,
+    lat = ~latitude,
+    radius = 6,
+    color = "blue",
+    fillOpacity = 0.7,
+    popup = ~paste0(
+      "<strong>", team_home, " vs ", team_away, "</strong><br>",
+      stadium, "<br>",
+      "Week ", schedule_week, " (", schedule_season, ")<br>",
+      "Temp: ", weather_temperature, "°F<br>",
+      "Humidity: ", weather_humidity, "%<br>",
+      "Wind: ", weather_wind_mph, " mph"
+    )
+  )
+
+#this map will have markers that pop up when moved over and will display name of stadium, who played, the weather etc
+#this map also has moving/zooming capabilities
+
+```
+
+**Code Chunk 2:** attempt to show differences using color and including home wins/losses in popups:
+
+```{r}
+
+#more advanced map with home wins/losses marked with different marker icons, and temperature color 
+
+library(leaflet)
+library(dplyr)
+library(readr)
+
+# Load data
+games <- read_csv("spreadspoke_scores.csv")
+stadium_coords <- read_csv("stadiums.csv")
+
+# Merge and calculate home win
+games_geo <- games %>%
+  filter(!is.na(weather_temperature)) %>%
+  left_join(stadium_coords, by = "stadium") %>%
+  filter(!is.na(latitude) & !is.na(longitude)) %>%
+  mutate(
+    home_win = score_home > score_away,
+    result_color = ifelse(home_win, "magenta", "black"),
+    wind_scaled = pmax(weather_wind_mph / 2, 3)
+  )
+
+# Temperature color palette
+temp_pal <- colorNumeric("RdYlBu", domain = games_geo$weather_temperature, reverse = TRUE)
+
+# Create Leaflet map
+leaflet(games_geo) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(
+    lng = ~longitude,
+    lat = ~latitude,
+    radius = ~wind_scaled,
+    color = ~result_color,
+    fillColor = ~temp_pal(weather_temperature),
+    fillOpacity = 0.7,
+    stroke = TRUE,
+    weight = 1,
+    popup = ~paste0(
+      "<strong>", team_home, " vs ", team_away, "</strong><br>",
+      stadium, "<br>",
+      "Week ", schedule_week, " (", schedule_season, ")<br>",
+      "Score: ", score_home, " - ", score_away, "<br>",
+      "Temp: ", weather_temperature, "°F<br>",
+      "Humidity: ", weather_humidity, "%<br>",
+      "Wind: ", weather_wind_mph, " mph<br>",
+      ifelse(home_win, "🏠 Home Win", "❌ Home Loss")
+    )
+  ) %>%
+  addLegend(
+    "bottomright",
+    pal = temp_pal,
+    values = ~weather_temperature,
+    title = "Temperature (°F)"
+  ) %>%
+  addLegend(
+    "bottomleft",
+    colors = c("magenta", "black"),
+    labels = c("Home Win", "Home Loss"),
+    title = "Game Result"
+  )
+```
+
+**Code Chunk #3:** final using clustering because of overlapping points making map hard to read/not able to read all popups
+
+```{r}
+
+#was having issues with the overlapping games in same stadiums that you couldn't read wihtin color/get all the dropdown boxes 
+
+library(leaflet)
+library(leaflet.extras)  # For clustering
+
+leaflet(games_geo) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(
+    lng = ~longitude,
+    lat = ~latitude,
+    radius = ~wind_scaled,
+    color = ~result_color,
+    fillColor = ~temp_pal(weather_temperature),
+    fillOpacity = 0.7,
+    stroke = TRUE,
+    weight = 1,
+    popup = ~paste0(
+      "<strong>", team_home, " vs ", team_away, "</strong><br>",
+      stadium, "<br>",
+      "Week ", schedule_week, " (", schedule_season, ")<br>",
+      "Score: ", score_home, " - ", score_away, "<br>",
+      "Temp: ", weather_temperature, "°F<br>",
+      "Humidity: ", weather_humidity, "%<br>",
+      "Wind: ", weather_wind_mph, " mph<br>",
+      ifelse(home_win, "🏠 Home Win", "❌ Home Loss")
+    ),
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLegend(
+    "bottomright",
+    pal = temp_pal,
+    values = ~weather_temperature,
+    title = "Temperature (°F)"
+  ) %>%
+  addLegend(
+    "bottomleft",
+    colors = c("magenta", "black"),
+    labels = c("Home Win", "Home Loss"),
+    title = "Game Result"
+  )
+```
+
+## Dygraph
+
+Dygraph helps display data over a period of time. It uses shiny applications to add an interactive element, which helps to highlight specific information, zoom in on a timeline, and pan across data.
+
+### Important Functions
+
+-   Dygraph(): creates an interactive plot for time-series object
+-   DyRangeSelector(): adds an interactive slider below plot to pan across the specified time of dataset
+-   DyOptions(): customize the appearance and behavior of plot
+-   DyAxis(): customizes axes for any use
+
+### Example
+
+```{r}
+library(shiny)
+library(htmlwidgets)
+library(dygraphs)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(xts)
+library(zoo)
+
+# Load the data
+team_stats <- read_csv("team_stats_2003_2023.csv")
+
+# Define the teams of interest
+selected_teams <- c("Green Bay Packers", "Chicago Bears", "Minnesota Vikings", "Detroit Lions")
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("NFC North Statistics (Last Decade)"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("metric", "Select Metric:",
+                  choices = c("Win %" = "win_loss_perc",
+                              "Point Differential" = "points_diff",
+                              "Turnover %" = "turnover_pct",
+                              "Score %" = "score_pct",
+                              "Expected Points Total" = "exp_pts_tot",
+                              "Penalty Yards" = "penalties_yds"),
+                  selected = "win_loss_perc")
+    ),
+    mainPanel(
+      dygraphOutput("nfl_dygraph")
+    )
+  )
+)
+
+# Define server
+server <- function(input, output) {
+  output$nfl_dygraph <- renderDygraph({
+    df <- team_stats |> 
+      filter(team %in% selected_teams, year >= 2013) |> 
+      mutate(win_efficiency = win_loss_perc * mov) |>  # create win_efficiency in all cases
+      select(year, team, all_of(input$metric)) |> 
+      pivot_wider(names_from = team, values_from = all_of(input$metric))
+    
+    ts_data <- xts(df[-1], order.by = as.yearmon(df$year))
+    
+    dygraph(ts_data, main = paste("NFC North Statistics", names(which(c(
+      win_loss_perc = "Win %",
+      points_diff = "Point Differential",
+      tot_yds = "Total Yards",
+      win_efficiency = "Win Efficiency",
+      turnover_pct = "Turnover %",
+      score_pct = "Score %",
+      exp_pts_tot = "Expected Points Total",
+      penalties_yds = "Penalty Yards"
+    ) == input$metric)), "(Last Decade)")) |> 
+      dyRangeSelector() |> 
+      dyOptions(
+        drawPoints = TRUE,
+        pointSize = 3,
+        colors = unname(c(
+          "Green Bay Packers" = "#203731",
+          "Chicago Bears" = "#FFA400",
+          "Minnesota Vikings" = "#4F2683",
+          "Detroit Lions" = "#0076B6"
+        )[colnames(ts_data)])
+      ) |> 
+      dyLegend(show = "always", width = 300) |> 
+      dyHighlight(highlightCircleSize = 6, 
+                  highlightSeriesBackgroundAlpha = 0.3,
+                  hideOnMouseOut = FALSE) |> 
+      dyAxis("x", axisLabelFormatter = JS("function(d){ return d.getFullYear(); }")) |> 
+      dyAxis("y", valueFormatter = if (input$metric == "win_loss_perc") {
+        JS("function(x) {return (x * 100).toFixed(1) + '%';}")
+      } else {
+        NULL
+      })
+  })
+}
+# Run the app
+shinyApp(ui = ui, server = server)
+```
+
+## VisNetwork
+
+### Important Functions
+
+### Example
+
+```{r}
+
+```

@@ -1,0 +1,2 @@
+"0","plot <- with(stats, plot3d(points, win_loss_perc, wins, type = ""s"", col = ""blue""))"
+"0","rglwidget(elementId = ""teamstats"") "

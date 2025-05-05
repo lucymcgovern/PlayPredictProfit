@@ -1,0 +1,94 @@
+---
+title: "Viridis Color Palettes"
+author: "Your name"
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Set global knit options (optional)
+knitr::opts_chunk$set(echo = FALSE)
+
+# load packages
+library(tidyverse)
+library(viridis)
+library(here)
+library(maps)
+library(sf)
+
+# load data and functions
+source(here("R/plot_temps.R"))
+```
+
+## Viridis
+
+The [viridis](https://sjmgarnier.github.io/viridis/) package provides eight eye-catching color palettes to use in data visualizations:
+
+-   magma
+-   inferno
+-   plasma
+-   viridis
+-   cividis
+-   rocket
+-   mako
+-   turbo
+
+## Optimized for perception
+
+According to the virids documentation, the palettes:
+
+> are designed to improve graph readability for readers with common forms of color blindness and/or color vision deficiency. The color maps are also perceptually-uniform, both in regular form and also when converted to black-and-white for printing.
+
+## Viridis in action
+
+Each plot uses a different viridis color palette to visualize the median high temperature (F) by US county.
+
+```{r}
+#| fig.width: 5
+#| layout-ncol: 2
+
+plot_temps("magma")
+plot_temps("inferno")
+```
+
+```{r}
+#| fig.width: 5
+#| layout-ncol: 2
+
+plot_temps("plasma")
+plot_temps("viridis")
+```
+
+```{r}
+#| fig.width: 5
+#| layout-ncol: 2
+
+plot_temps("cividis")
+plot_temps("rocket")
+```
+
+```{r}
+#| fig.width: 5
+#| layout-ncol: 2
+
+plot_temps("mako")
+plot_temps("turbo")
+```
+
+## Usage
+
+To use a viridis palette in your plot, include `scale_*_viridis()` in your ggplot2 call:
+
+```{r}
+#| eval: false
+#| echo: true
+
+mpg |>  
+  ggplot(aes(x = displ, y = cty, color = hwy)) +
+    geom_point() +
+    scale_color_viridis(option = "A")
+```
