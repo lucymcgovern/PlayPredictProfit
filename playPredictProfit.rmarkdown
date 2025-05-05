@@ -8,7 +8,7 @@ runtime: shiny
 
 ## Introduction
 
-NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.html) and R Markdown Publishing with Posit Cloud and GitHub
+NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.html)
 
 *How can we use interactive data to our advantage when predicting NFL game outcomes?*
 
@@ -19,15 +19,8 @@ In our project, we hope to teach you how to use various functions of HTMLWidgets
 ```{r}
 install.packages("rsconnect")
 install.packages("shiny")
+install.packages("quarto") 
 ```
-
-1.  Render .qmd file to create a .html document
-2.  Push project to a GitHub repository
-3.  Use posit Connect, which is linked to both Posit and GitHub, to publish content
-4.  Publish rmarkdown file by selecting the repository you pushed your project to, connecting the commit branch which pushed the document to github, and then selecting the primary html file.
-5.  Continue to commit your project routinely
-
-*Notes: this project originated as a .qmd file with "runtime: shiny" in the header which allowed us to embed shiny implementations. However, you cannot publish shiny using a quarto doc which is why we had to publish as a markdown file.*
 
 ### Data Sets
 
@@ -204,21 +197,21 @@ stats$color <- division_colors[stats$team_division]
 **Plot 1**
 
 ```{r}
-with(stats, plot3d(points, win_loss_perc, total_yards, type = "s", col = "blue"))
+plot <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = "blue"))
 rglwidget(elementId = "teamstats") 
 ```
 
 **Plot 2**
 
 ```{r}
-plot2 <- with(stats, plot3d(turnovers, pass_int, penalties, type = "s", col = "red"))
-rglwidget(elementId = "teamstats2")  
+plot2 <- with(stats, plot3d(points, points_opp, points_diff, type = "s", col = "red"))
+rglwidget(elementId = "teamstats2") 
 ```
 
 **Plot 2**
 
 ```{r}
-plot3 <- with(stats, plot3d(year, pass_td, pass_cmp, type = "s", col = "green"))
+plot3 <- with(stats, plot3d(year, mov, wins, type = "s", col = "green"))
 rglwidget(elementId = "teamstats3")
 ```
 
@@ -228,17 +221,6 @@ rglwidget(elementId = "teamstats3")
 plot4 <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = color))
 rglwidget(elementId = "teamstats4")
 ```
-
-**Legend:**
-
--   AFC east: turquoise
--   AFC north: lime green
--   AFC south: magenta
--   AFC west: purple
--   NFC east: blue
--   NFC north: sky blue
--   NFC west: red
--   NFC south: orange
 
 ## Leaflet
 
@@ -510,3 +492,4 @@ shinyApp(ui = ui, server = server)
 ```{r}
 
 ```
+
