@@ -12,7 +12,7 @@ NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.ht
 
 *How can we use interactive data to our advantage when predicting NFL game outcomes?*
 
-In our project, we hope to teach you how to use various functions of HTMLWidgets through the lense of NFL betting and predictions. These tools will help you to visualize the impact of various NFL metrics on game outcome through interactive and 3D plots. We hope that you are able to use this dashboard to make your own predictions and, eventually, create your own HTMLWidgets graphics.
+In our project, we hope to teach you how to use various functions of HTMLWidgets through the lens of NFL betting and predictions. These tools will help you to visualize the impact of various NFL metrics on game outcome through interactive and 3D plots. We hope that you are able to use this dashboard to make your own predictions and, eventually, create your own HTMLWidgets graphics.
 
 ### Publishing
 
@@ -506,7 +506,15 @@ shinyApp(ui = ui, server = server)
 
 ## VisNetwork
 
+VisNetwork creates interactive networks to aid in visualizing data that can be edited from the website without needing to edit code.
+
 ### Important Functions
+
+-   shape=, title=, color=, shadow=: allow customization of the nodes in the network
+
+-   arrows=, dashes=, smooth=: allow customization of the edges
+
+-   manipulation=: allows the website user to edit the network by adding or deleting edges or nodes
 
 ### Example
 
