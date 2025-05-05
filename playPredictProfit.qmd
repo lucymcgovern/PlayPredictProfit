@@ -25,11 +25,11 @@ install.packages("shiny")
 
 1.  Render .qmd file to create a .html document
 2.  Push project to a GitHub repository
-3.  Use posit Connect, which is linked to both Posit and GitHub, to publish content
+3.  Use Posit Connect, which is linked to both Posit and GitHub, to publish content
 4.  Publish rmarkdown file by selecting the repository you pushed your project to, connecting the commit branch which pushed the document to github, and then selecting the primary html file.
 5.  Continue to commit your project routinely
 
-*Notes: this project originated as a .qmd file with "runtime: shiny" in the header which allowed us to embed shiny implementations. However, you cannot publish shiny using a quarto doc which is why we had to publish as a markdown file.*
+*Notes: this project originated as a .qmd file with "runtime: shiny" in the header which allowed us to embed shiny implementations. However, you cannot publish shiny using a quarto doc which is why we had to change it to a markdown file. This would show in the rendering, but not the published version so that is why the dashboard you see doesn't include shiny.*
 
 ### Data Sets
 
