@@ -178,7 +178,6 @@ RGL Widget helps to create 3D, interactive graphs and plots which can be embedde
 
 -   plot3d(): creates the plot
 -   rglwidget(): converts the plot to a widget, arguments like "width" and "height" can be used for customization
--   toggleWidget(): interactive elements like check boxes
 -   playWidget(): animation controls for time-based plots
 
 ### Example
@@ -508,5 +507,64 @@ shinyApp(ui = ui, server = server)
 ### Example
 
 ```{r}
+library(visNetwork)
 
+nfldata<- read_csv("nfl_teams copy.csv")
 ```
+
+```{r}
+# nodes
+nflnode <- data.frame(id = "NFL", label = "NFL", level = 0, color= "red")
+
+conferences <- unique(nfldata$team_conference)
+conferencenodes <- data.frame(id = conferences,
+  label = conferences,
+  level = 1, color= "green")
+
+divisions <- unique(nfldata$team_division)
+divisionnodes <- data.frame( id = divisions,
+  label = divisions, color="blue",
+  level = 2)
+
+teamnodes <- nfldata |>
+  select(team_name) |>
+  distinct() |>
+  mutate(id = team_name, label = team_name, level = 3, color= "purple")
+
+nodes <- bind_rows(nflnode, conferencenodes, divisionnodes, teamnodes)
+
+#edges
+nfltoconfrence <- data.frame(
+  from = "NFL",
+  to = conferences)
+
+conferencetodivision <- nfldata|>
+  select(team_conference, team_division) |>
+  distinct() |>
+  rename(from = team_conference, to = team_division)
+
+divisiontoteam <- nfldata|>
+  select(team_division, team_name) |>
+  rename(from = team_division, to = team_name)
+
+edges <- bind_rows(nfltoconfrence, conferencetodivision, divisiontoteam)
+```
+*The code shown above organizes the data into “nodes” that represent values and “edges” that connect nodes to eachother*
+
+**Network created by visNetwork**
+```{r}
+# code used to design network
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation= TRUE)
+```
+
+**Different organization of the network**
+```{r}
+#code used to organize network into a hierarchial layout
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visHierarchicalLayout()|>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation = TRUE)
+```
+

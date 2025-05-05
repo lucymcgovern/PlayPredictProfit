@@ -1,0 +1,91 @@
+---
+title: "visNetwork example"
+author: Emma Kimball
+format: html
+editor: visual
+---
+
+# Using visNetwork to visualize what conferences and division NFL teams are in
+
+```{r}
+#| echo: FALSE
+#| output: FALSE
+#| 
+library(htmlwidgets)
+library(visNetwork)
+library(dplyr)
+library(readr)
+```
+
+```{r}
+#| echo: FALSE
+#| output: FALSE
+nfldata<- read_csv("data/nfl_teams.csv") 
+
+```
+
+The code shown below organizes the data into "nodes" that represent values and "edges" that connect nodes to eachother
+
+```{r sortdata}
+#| code-fold: TRUE
+
+# nodes
+nflnode <- data.frame(id = "NFL", label = "NFL", level = 0, color= "red")
+
+conferences <- unique(nfldata$team_conference)
+conferencenodes <- data.frame(id = conferences,
+  label = conferences,
+  level = 1, color= "green")
+
+divisions <- unique(nfldata$team_division)
+divisionnodes <- data.frame( id = divisions,
+  label = divisions, color="blue",
+  level = 2)
+
+teamnodes <- nfldata |>
+  select(team_name) |>
+  distinct() |>
+  mutate(id = team_name, label = team_name, level = 3, color= "purple")
+
+nodes <- bind_rows(nflnode, conferencenodes, divisionnodes, teamnodes)
+
+#edges
+nfltoconfrence <- data.frame(
+  from = "NFL",
+  to = conferences)
+
+conferencetodivision <- nfldata|>
+  select(team_conference, team_division) |>
+  distinct() |>
+  rename(from = team_conference, to = team_division)
+
+divisiontoteam <- nfldata|>
+  select(team_division, team_name) |>
+  rename(from = team_division, to = team_name)
+
+edges <- bind_rows(nfltoconfrence, conferencetodivision, divisiontoteam)
+
+```
+
+### Network created by visNetwork
+
+```{r visuals}
+#| code-fold: TRUE
+
+# code used to design network
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation= TRUE)
+```
+
+### Different organization of the network
+
+```{r pyramid}
+#| code-fold: TRUE
+
+#code used to organize network into a hierarchial layout
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visHierarchicalLayout()|>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation = TRUE)
+```

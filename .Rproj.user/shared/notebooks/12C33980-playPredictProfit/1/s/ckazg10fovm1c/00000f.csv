@@ -1,2 +1,0 @@
-"0","plot2 <- with(stats, plot3d(points, points_opp, points_diff, type = ""s"", col = ""red""))"
-"0","rglwidget(elementId = ""teamstats2"") "

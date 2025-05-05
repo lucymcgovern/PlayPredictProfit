@@ -8,7 +8,7 @@ runtime: shiny
 
 ## Introduction
 
-NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.html)
+NFL Outcome Predictions Using [HTMLWidgets](https://www.htmlwidgets.org/index.html) and R Markdown Publishing with Posit Cloud and GitHub
 
 *How can we use interactive data to our advantage when predicting NFL game outcomes?*
 
@@ -19,8 +19,15 @@ In our project, we hope to teach you how to use various functions of HTMLWidgets
 ```{r}
 install.packages("rsconnect")
 install.packages("shiny")
-install.packages("quarto") 
 ```
+
+1.  Render .qmd file to create a .html document
+2.  Push project to a GitHub repository
+3.  Use posit Connect, which is linked to both Posit and GitHub, to publish content
+4.  Publish rmarkdown file by selecting the repository you pushed your project to, connecting the commit branch which pushed the document to github, and then selecting the primary html file.
+5.  Continue to commit your project routinely
+
+*Notes: this project originated as a .qmd file with "runtime: shiny" in the header which allowed us to embed shiny implementations. However, you cannot publish shiny using a quarto doc which is why we had to publish as a markdown file.*
 
 ### Data Sets
 
@@ -171,7 +178,6 @@ RGL Widget helps to create 3D, interactive graphs and plots which can be embedde
 
 -   plot3d(): creates the plot
 -   rglwidget(): converts the plot to a widget, arguments like "width" and "height" can be used for customization
--   toggleWidget(): interactive elements like check boxes
 -   playWidget(): animation controls for time-based plots
 
 ### Example
@@ -197,21 +203,21 @@ stats$color <- division_colors[stats$team_division]
 **Plot 1**
 
 ```{r}
-plot <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = "blue"))
+with(stats, plot3d(points, win_loss_perc, total_yards, type = "s", col = "blue"))
 rglwidget(elementId = "teamstats") 
 ```
 
 **Plot 2**
 
 ```{r}
-plot2 <- with(stats, plot3d(points, points_opp, points_diff, type = "s", col = "red"))
-rglwidget(elementId = "teamstats2") 
+plot2 <- with(stats, plot3d(turnovers, pass_int, penalties, type = "s", col = "red"))
+rglwidget(elementId = "teamstats2")  
 ```
 
 **Plot 2**
 
 ```{r}
-plot3 <- with(stats, plot3d(year, mov, wins, type = "s", col = "green"))
+plot3 <- with(stats, plot3d(year, pass_td, pass_cmp, type = "s", col = "green"))
 rglwidget(elementId = "teamstats3")
 ```
 
@@ -221,6 +227,17 @@ rglwidget(elementId = "teamstats3")
 plot4 <- with(stats, plot3d(points, win_loss_perc, wins, type = "s", col = color))
 rglwidget(elementId = "teamstats4")
 ```
+
+**Legend:**
+
+-   AFC east: turquoise
+-   AFC north: lime green
+-   AFC south: magenta
+-   AFC west: purple
+-   NFC east: blue
+-   NFC north: sky blue
+-   NFC west: red
+-   NFC south: orange
 
 ## Leaflet
 
@@ -490,5 +507,66 @@ shinyApp(ui = ui, server = server)
 ### Example
 
 ```{r}
+library(visNetwork)
 
+nfldata<- read_csv("nfl_teams copy.csv")
+```
+
+```{r}
+# nodes
+nflnode <- data.frame(id = "NFL", label = "NFL", level = 0, color= "red")
+
+conferences <- unique(nfldata$team_conference)
+conferencenodes <- data.frame(id = conferences,
+  label = conferences,
+  level = 1, color= "green")
+
+divisions <- unique(nfldata$team_division)
+divisionnodes <- data.frame( id = divisions,
+  label = divisions, color="blue",
+  level = 2)
+
+teamnodes <- nfldata |>
+  select(team_name) |>
+  distinct() |>
+  mutate(id = team_name, label = team_name, level = 3, color= "purple")
+
+nodes <- bind_rows(nflnode, conferencenodes, divisionnodes, teamnodes)
+
+#edges
+nfltoconfrence <- data.frame(
+  from = "NFL",
+  to = conferences)
+
+conferencetodivision <- nfldata|>
+  select(team_conference, team_division) |>
+  distinct() |>
+  rename(from = team_conference, to = team_division)
+
+divisiontoteam <- nfldata|>
+  select(team_division, team_name) |>
+  rename(from = team_division, to = team_name)
+
+edges <- bind_rows(nfltoconfrence, conferencetodivision, divisiontoteam)
+```
+
+*The code shown above organizes the data into “nodes” that represent values and “edges” that connect nodes to eachother*
+
+**Network created by visNetwork**
+
+```{r}
+# code used to design network
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation= TRUE)
+```
+
+**Different organization of the network**
+
+```{r}
+#code used to organize network into a hierarchial layout
+visNetwork(nodes, edges, width = "100%") |>
+  visEdges(arrows = "to") |>
+  visHierarchicalLayout()|>
+  visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE, manipulation = TRUE)
 ```

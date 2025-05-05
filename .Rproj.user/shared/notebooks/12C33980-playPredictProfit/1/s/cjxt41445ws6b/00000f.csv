@@ -1,2 +1,0 @@
-"0","plot3 <- with(stats, plot3d(year, mov, wins, type = ""s"", col = ""green""))"
-"0","rglwidget(elementId = ""teamstats3"")"
